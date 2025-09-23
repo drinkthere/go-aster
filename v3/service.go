@@ -99,3 +99,18 @@ func (c *Client) NewGetBalanceService() *GetBalanceService {
 func (c *Client) NewGetPositionsService() *GetPositionsService {
 	return &GetPositionsService{c: c}
 }
+
+// NewStartUserStreamService init start user stream service
+func (c *Client) NewStartUserStreamService() *StartUserStreamService {
+	return &StartUserStreamService{c: c}
+}
+
+// NewKeepaliveUserStreamService init keepalive user stream service
+func (c *Client) NewKeepaliveUserStreamService() *KeepaliveUserStreamService {
+	return &KeepaliveUserStreamService{c: c}
+}
+
+// NewCloseUserStreamService init close user stream service
+func (c *Client) NewCloseUserStreamService() *CloseUserStreamService {
+	return &CloseUserStreamService{c: c}
+}

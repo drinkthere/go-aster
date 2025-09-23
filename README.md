@@ -24,11 +24,15 @@ serverTime, err := client.NewServerTimeService().Do(context.Background())
 
 ## Features
 
-- Market Data endpoints
-- Account and Trading endpoints
+- Market Data endpoints (depth, trades, klines, ticker)
+- Account and Trading endpoints (orders, positions, balances)
 - WebSocket support
-- Automatic signature generation
+  - Market data streams (depth, trades, klines, book ticker)
+  - User data streams (order updates, position updates, balance changes)
+  - Combined streams for multiple symbols
+- Automatic signature generation with Web3
 - Rate limit handling
+- Reconnection support for WebSocket
 
 ## Documentation
 
