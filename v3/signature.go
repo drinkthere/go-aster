@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/sha3"
-	"github.com/your-org/go-aster/common"
+	"github.com/drinkthere/go-aster/common"
 )
 
 func (c *Client) signRequest(queryString, bodyString string, r *request) (string, error) {

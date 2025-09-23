@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/your-org/go-aster/v3/futures"
+	"github.com/drinkthere/go-aster/v3/futures"
 )
 
 // GetAccountService get account

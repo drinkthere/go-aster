@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/your-org/go-aster/common"
+	"github.com/drinkthere/go-aster/common"
 	jsoniter "github.com/json-iterator/go"
 )
 

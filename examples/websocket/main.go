@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	aster "github.com/your-org/go-aster/v3"
+	aster "github.com/drinkthere/go-aster/v3"
 )
 
 func main() {

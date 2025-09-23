@@ -1,4 +1,4 @@
-module github.com/your-org/go-aster
+module github.com/drinkthere/go-aster
 
 go 1.21
 

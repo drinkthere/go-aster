@@ -5,14 +5,14 @@ A Go SDK for Aster Finance Futures API v3.
 ## Installation
 
 ```bash
-go get -u github.com/your-org/go-aster
+go get -u github.com/drinkthere/go-aster
 ```
 
 ## Quick Start
 
 ```go
 import (
-    "github.com/your-org/go-aster/v3"
+    "github.com/drinkthere/go-aster/v3"
 )
 
 // Create a new client

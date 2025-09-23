@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	aster "github.com/your-org/go-aster/v3"
-	"github.com/your-org/go-aster/v3/futures"
+	aster "github.com/drinkthere/go-aster/v3"
+	"github.com/drinkthere/go-aster/v3/futures"
 )
 
 func main() {
