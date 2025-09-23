@@ -70,7 +70,20 @@ func main() {
 		fmt.Printf("Next Funding Time: %d\n", mp.NextFundingTime)
 	}
 	
-	// Example 5: Get account info (requires authentication)
+	// Example 5: Get commission rate
+	fmt.Println("\n=== Commission Rate ===")
+	commissionService := &futures.CommissionRateService{C: client}
+	commissionService.Symbol("BTCUSDT")
+	commission, err := commissionService.Do(context.Background())
+	if err != nil {
+		fmt.Printf("Error getting commission rate (expected if using demo keys): %v\n", err)
+	} else {
+		fmt.Printf("Symbol: %s\n", commission.Symbol)
+		fmt.Printf("Maker Commission Rate: %s\n", commission.MakerCommissionRate)
+		fmt.Printf("Taker Commission Rate: %s\n", commission.TakerCommissionRate)
+	}
+	
+	// Example 6: Get account info (requires authentication)
 	fmt.Println("\n=== Account Info ===")
 	accountService := &futures.GetAccountService{C: client}
 	account, err := accountService.Do(context.Background())

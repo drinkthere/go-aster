@@ -181,3 +181,37 @@ func (s *UpdatePositionMarginService) Do(ctx context.Context, opts ...aster.Requ
 	_, err := s.C.CallAPI(ctx, r, opts...)
 	return err
 }
+
+// CommissionRateService get commission rate
+type CommissionRateService struct {
+	C      *aster.BaseClient
+	symbol string
+}
+
+// Symbol set symbol
+func (s *CommissionRateService) Symbol(symbol string) *CommissionRateService {
+	s.symbol = symbol
+	return s
+}
+
+// Do send request
+func (s *CommissionRateService) Do(ctx context.Context, opts ...aster.RequestOption) (res *CommissionRate, err error) {
+	r := aster.NewRequest(http.MethodGet, "/fapi/v1/commissionRate", aster.SecTypeSigned)
+	if s.symbol != "" {
+		r.SetParam("symbol", s.symbol)
+	}
+	data, err := s.C.CallAPI(ctx, r, opts...)
+	if err != nil {
+		return nil, err
+	}
+	res = new(CommissionRate)
+	err = aster.JSON.Unmarshal(data, res)
+	return res, err
+}
+
+// CommissionRate represents commission rate
+type CommissionRate struct {
+	Symbol              string `json:"symbol"`
+	MakerCommissionRate string `json:"makerCommissionRate"`
+	TakerCommissionRate string `json:"takerCommissionRate"`
+}
