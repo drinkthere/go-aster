@@ -27,6 +27,13 @@ func newWsConfig(endpoint string) *WsConfig {
 	}
 }
 
+func newWsConfigWithIP(endpoint string, localIP string) *WsConfig {
+	return &WsConfig{
+		Endpoint: endpoint,
+		IP:       localIP,
+	}
+}
+
 func (cfg *WsConfig) WithIP(ip string) {
 	cfg.IP = ip
 }

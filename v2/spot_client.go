@@ -104,25 +104,54 @@ func (c *SpotClient) NewCloseUserStreamService() *CloseSpotUserStreamService {
 
 // WebSocket streams
 func (c *SpotClient) WsDepthServe(symbol string, handler WsDepthHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	return WsSpotDepthServe(symbol, handler, errHandler)
+	return c.WsDepthServeWithLocalAddr(symbol, handler, errHandler, c.LocalAddress)
 }
 
 func (c *SpotClient) WsKlineServe(symbol string, interval common.Interval, handler WsSpotKlineHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	return WsSpotKlineServe(symbol, string(interval), handler, errHandler)
+	return c.WsKlineServeWithLocalAddr(symbol, string(interval), handler, errHandler, c.LocalAddress)
 }
 
 func (c *SpotClient) WsAggTradeServe(symbol string, handler WsSpotAggTradeHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	return WsSpotAggTradeServe(symbol, handler, errHandler)
+	return c.WsAggTradeServeWithLocalAddr(symbol, handler, errHandler, c.LocalAddress)
 }
 
 func (c *SpotClient) WsBookTickerServe(symbol string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	return WsSpotBookTickerServe(symbol, handler, errHandler)
+	return c.WsBookTickerServeWithLocalAddr(symbol, handler, errHandler, c.LocalAddress)
 }
 
 func (c *SpotClient) WsAllMarketsStatServe(handler WsSpotAllMarketsStatHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	return WsSpotAllMarketsStatServe(handler, errHandler)
+	return c.WsAllMarketsStatServeWithLocalAddr(handler, errHandler, c.LocalAddress)
 }
 
 func (c *SpotClient) WsUserDataServe(listenKey string, handler WsSpotUserDataHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	return WsSpotUserDataServe(listenKey, handler, errHandler)
+	return c.WsUserDataServeWithLocalAddr(listenKey, handler, errHandler, c.LocalAddress)
+}
+
+// WebSocket streams with LocalAddress support
+func (c *SpotClient) WsDepthServeWithLocalAddr(symbol string, handler WsDepthHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	return WsSpotDepthServeWithLocalAddr(symbol, handler, errHandler, localAddr)
+}
+
+func (c *SpotClient) WsKlineServeWithLocalAddr(symbol string, interval string, handler WsSpotKlineHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	return WsSpotKlineServeWithLocalAddr(symbol, interval, handler, errHandler, localAddr)
+}
+
+func (c *SpotClient) WsAggTradeServeWithLocalAddr(symbol string, handler WsSpotAggTradeHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	return WsSpotAggTradeServeWithLocalAddr(symbol, handler, errHandler, localAddr)
+}
+
+func (c *SpotClient) WsBookTickerServeWithLocalAddr(symbol string, handler WsBookTickerHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	return WsSpotBookTickerServeWithLocalAddr(symbol, handler, errHandler, localAddr)
+}
+
+func (c *SpotClient) WsAllMarketsStatServeWithLocalAddr(handler WsSpotAllMarketsStatHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	return WsSpotAllMarketsStatServeWithLocalAddr(handler, errHandler, localAddr)
+}
+
+func (c *SpotClient) WsUserDataServeWithLocalAddr(listenKey string, handler WsSpotUserDataHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	return WsSpotUserDataServeWithLocalAddr(listenKey, handler, errHandler, localAddr)
+}
+
+func (c *SpotClient) WsCombinedBookTickerServe(symbols []string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	return WsCombinedSpotBookTickerServeWithLocalAddr(symbols, handler, errHandler, c.LocalAddress)
 }

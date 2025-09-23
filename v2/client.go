@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -42,15 +43,16 @@ type doFunc func(req *http.Request) (*http.Response, error)
 
 // BaseClient is the base client for all APIs
 type BaseClient struct {
-	APIKey     string
-	SecretKey  string
-	BaseURL    string
-	UserAgent  string
-	HTTPClient *http.Client
-	Debug      bool
-	Logger     *log.Logger
-	TimeOffset int64
-	do         doFunc
+	APIKey      string
+	SecretKey   string
+	BaseURL     string
+	UserAgent   string
+	HTTPClient  *http.Client
+	Debug       bool
+	Logger      *log.Logger
+	TimeOffset  int64
+	do          doFunc
+	LocalAddress string // Local IP address for outbound connections
 	
 	// For futures API with Web3 signature
 	UserAddress   string
@@ -118,22 +120,48 @@ func WithDebug(debug bool) ClientOption {
 	}
 }
 
+// WithLocalAddress sets local IP address for outbound connections
+func WithLocalAddress(localAddr string) ClientOption {
+	return func(c *BaseClient) {
+		c.LocalAddress = localAddr
+	}
+}
+
 // NewBaseClient creates a new base client
 func NewBaseClient(opts ...ClientOption) *BaseClient {
 	c := &BaseClient{
 		UserAgent: "go-aster/2.0",
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
 		Logger: log.New(os.Stderr, "[ASTER] ", log.LstdFlags),
 	}
 	
-	// Apply options
+	// Apply options first
 	for _, opt := range opts {
 		opt(c)
+	}
+	
+	// Create HTTP client with optional local address binding
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	
+	// If LocalAddress is specified, configure the dialer
+	if c.LocalAddress != "" {
+		localAddr, err := net.ResolveTCPAddr("tcp", c.LocalAddress+":0")
+		if err == nil {
+			transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				dialer := &net.Dialer{
+					LocalAddr: localAddr,
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}
+				return dialer.DialContext(ctx, network, addr)
+			}
+		}
+	}
+	
+	c.HTTPClient = &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: transport,
 	}
 	
 	return c

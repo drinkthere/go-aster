@@ -143,6 +143,10 @@ See the `examples/` directory for more comprehensive examples:
 - `spot_example.go` - Spot trading examples
 - `futures_example.go` - Futures trading examples
 - `websocket_example.go` - WebSocket streaming examples
+- `local_ip_example.go` - Local IP address binding examples
+- `newFuturesClient_basic.go` - Basic aster.NewFuturesClient usage
+- `simple_futures_example.go` - Simple futures operations
+- `futures_client_example.go` - Complete futures client with WebSocket
 
 ## Error Handling
 
@@ -179,6 +183,28 @@ client := aster.NewSpot("key", "secret",
 ```go
 client := aster.NewSpot("key", "secret", aster.WithDebug(true))
 ```
+
+### Local IP Address Binding
+To bind outbound connections to a specific local IP address (useful for multi-homed servers):
+
+```go
+// For REST API calls and WebSocket connections
+client := aster.NewSpot("key", "secret", 
+    aster.WithLocalAddress("192.168.1.100"))
+
+// Also works for futures
+futuresClient := aster.NewFutures("key", "secret",
+    aster.WithLocalAddress("192.168.1.100"))
+
+// WebSocket connections will automatically use the client's LocalAddress
+doneC, stopC, err := client.WsBookTickerServe("BTCUSDT", handler, errHandler)
+
+// Or specify different local IP for individual WebSocket connections
+doneC, stopC, err := client.WsBookTickerServeWithLocalAddr("BTCUSDT", 
+    handler, errHandler, "192.168.1.101")
+```
+
+See `examples/local_ip_example.go` for a complete example.
 
 ## License
 

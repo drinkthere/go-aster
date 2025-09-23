@@ -314,3 +314,254 @@ func wsCombinedFuturesBookTickerServe(endpoint string, handler WsBookTickerHandl
 	}
 	return wsServe(cfg, wsHandler, errHandler)
 }
+
+// Futures WebSocket functions with LocalAddress support
+
+// WsFuturesDepthServeWithLocalAddr serves websocket depth stream for futures with local address binding
+func WsFuturesDepthServeWithLocalAddr(symbol string, handler WsDepthHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/ws/%s@depth", getWsEndpoint(true, false), strings.ToLower(symbol))
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		event := new(WsDepthEvent)
+		err := json.Unmarshal(message, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsFuturesKlineServeWithLocalAddr serves websocket kline stream for futures with local address binding
+func WsFuturesKlineServeWithLocalAddr(symbol string, interval string, handler WsFuturesKlineHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/ws/%s@kline_%s", getWsEndpoint(true, false), strings.ToLower(symbol), interval)
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		event := new(WsFuturesKlineEvent)
+		err := json.Unmarshal(message, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsFuturesAggTradeServeWithLocalAddr serves websocket aggregate trade stream for futures with local address binding
+func WsFuturesAggTradeServeWithLocalAddr(symbol string, handler WsFuturesAggTradeHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/ws/%s@aggTrade", getWsEndpoint(true, false), strings.ToLower(symbol))
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		event := new(WsFuturesAggTradeEvent)
+		err := json.Unmarshal(message, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsFuturesBookTickerServeWithLocalAddr serves websocket book ticker stream for futures with local address binding
+func WsFuturesBookTickerServeWithLocalAddr(symbol string, handler WsBookTickerHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/ws/%s@bookTicker", getWsEndpoint(true, false), strings.ToLower(symbol))
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		event := new(WsBookTickerEvent)
+		err := json.Unmarshal(message, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsFuturesMarkPriceServeWithLocalAddr serves websocket mark price stream for futures with local address binding
+func WsFuturesMarkPriceServeWithLocalAddr(symbol string, handler WsFuturesMarkPriceHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/ws/%s@markPrice", getWsEndpoint(true, false), strings.ToLower(symbol))
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		event := new(WsFuturesMarkPriceEvent)
+		err := json.Unmarshal(message, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsFuturesUserDataServeWithLocalAddr serves websocket user data stream for futures with local address binding
+func WsFuturesUserDataServeWithLocalAddr(listenKey string, handler WsFuturesUserDataHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/ws/%s", getWsEndpoint(true, false), listenKey)
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		// First check the event type using a map
+		var rawMap map[string]interface{}
+		err := json.Unmarshal(message, &rawMap)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		
+		eventTypeStr, ok := rawMap["e"].(string)
+		if !ok {
+			if errHandler != nil {
+				errHandler(fmt.Errorf("event type 'e' is not a string"))
+			}
+			return
+		}
+		
+		// Parse based on event type
+		switch eventTypeStr {
+		case "ACCOUNT_UPDATE":
+			event := new(WsFuturesAccountUpdate)
+			err := json.Unmarshal(message, event)
+			if err != nil {
+				if errHandler != nil {
+					errHandler(err)
+				}
+				return
+			}
+			userDataEvent := &WsFuturesUserDataEvent{
+				Event:         eventTypeStr,
+				AccountUpdate: event,
+			}
+			handler(userDataEvent)
+		case "ORDER_TRADE_UPDATE":
+			event := new(WsFuturesOrderUpdate)
+			err := json.Unmarshal(message, event)
+			if err != nil {
+				if errHandler != nil {
+					errHandler(err)
+				}
+				return
+			}
+			userDataEvent := &WsFuturesUserDataEvent{
+				Event:       eventTypeStr,
+				OrderUpdate: event,
+			}
+			handler(userDataEvent)
+		case "ACCOUNT_CONFIG_UPDATE":
+			event := new(WsFuturesAccountConfigUpdate)
+			err := json.Unmarshal(message, event)
+			if err != nil {
+				if errHandler != nil {
+					errHandler(err)
+				}
+				return
+			}
+			userDataEvent := &WsFuturesUserDataEvent{
+				Event:               eventTypeStr,
+				AccountConfigUpdate: event,
+			}
+			handler(userDataEvent)
+		case "MARGIN_CALL":
+			event := new(WsFuturesMarginCall)
+			err := json.Unmarshal(message, event)
+			if err != nil {
+				if errHandler != nil {
+					errHandler(err)
+				}
+				return
+			}
+			userDataEvent := &WsFuturesUserDataEvent{
+				Event:      eventTypeStr,
+				MarginCall: event,
+			}
+			handler(userDataEvent)
+		default:
+			if errHandler != nil {
+				errHandler(fmt.Errorf("unknown event type: %s", eventTypeStr))
+			}
+		}
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsCombinedFuturesBookTickerServeWithLocalAddr serves websocket combined book ticker stream for futures with local address binding
+func WsCombinedFuturesBookTickerServeWithLocalAddr(symbols []string, handler WsBookTickerHandler, errHandler ErrHandler, localAddr string) (doneC, stopC chan struct{}, err error) {
+	var streams []string
+	for _, s := range symbols {
+		streams = append(streams, fmt.Sprintf("%s@bookTicker", strings.ToLower(s)))
+	}
+	endpoint := fmt.Sprintf("%s?streams=%s", combinedFuturesBaseURL, strings.Join(streams, "/"))
+	var cfg *WsConfig
+	if localAddr != "" {
+		cfg = newWsConfigWithIP(endpoint, localAddr)
+	} else {
+		cfg = newWsConfig(endpoint)
+	}
+	wsHandler := func(message []byte) {
+		var combinedEvent struct {
+			Stream string          `json:"stream"`
+			Data   json.RawMessage `json:"data"`
+		}
+		err := json.Unmarshal(message, &combinedEvent)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+
+		event := new(WsBookTickerEvent)
+		err = json.Unmarshal(combinedEvent.Data, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
