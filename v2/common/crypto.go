@@ -7,7 +7,7 @@ import (
 	"math/big"
 )
 
-// HexToECDSA converts hex string to ECDSA private key
+// HexToECDSA converts hex bytes to ECDSA private key
 func HexToECDSA(hexkey []byte) (*ecdsa.PrivateKey, error) {
 	priv := new(ecdsa.PrivateKey)
 	priv.PublicKey.Curve = elliptic.P256()

@@ -1,20 +1,21 @@
-package aster
+package futures
 
 import (
 	"context"
 	"net/http"
 
-	"github.com/drinkthere/go-aster/v3/futures"
+	"github.com/drinkthere/go-aster/v2"
+	"github.com/drinkthere/go-aster/v2/common"
 )
 
-// CreateOrderService create order
+// CreateOrderService create futures order
 type CreateOrderService struct {
-	c                *Client
+	C                *aster.BaseClient
 	symbol           string
-	side             futures.SideType
-	positionSide     *futures.PositionSideType
-	orderType        futures.OrderType
-	timeInForce      *futures.TimeInForceType
+	side             common.SideType
+	positionSide     *PositionSideType
+	orderType        common.OrderType
+	timeInForce      *common.TimeInForceType
 	quantity         string
 	reduceOnly       *bool
 	price            *string
@@ -23,9 +24,9 @@ type CreateOrderService struct {
 	closePosition    *bool
 	activationPrice  *string
 	callbackRate     *string
-	workingType      *futures.WorkingType
+	workingType      *WorkingType
 	priceProtect     *bool
-	newOrderRespType *futures.NewOrderRespType
+	newOrderRespType *common.NewOrderRespType
 }
 
 // Symbol set symbol
@@ -35,25 +36,25 @@ func (s *CreateOrderService) Symbol(symbol string) *CreateOrderService {
 }
 
 // Side set side
-func (s *CreateOrderService) Side(side futures.SideType) *CreateOrderService {
+func (s *CreateOrderService) Side(side common.SideType) *CreateOrderService {
 	s.side = side
 	return s
 }
 
 // PositionSide set positionSide
-func (s *CreateOrderService) PositionSide(positionSide futures.PositionSideType) *CreateOrderService {
+func (s *CreateOrderService) PositionSide(positionSide PositionSideType) *CreateOrderService {
 	s.positionSide = &positionSide
 	return s
 }
 
 // Type set type
-func (s *CreateOrderService) Type(orderType futures.OrderType) *CreateOrderService {
+func (s *CreateOrderService) Type(orderType common.OrderType) *CreateOrderService {
 	s.orderType = orderType
 	return s
 }
 
 // TimeInForce set timeInForce
-func (s *CreateOrderService) TimeInForce(timeInForce futures.TimeInForceType) *CreateOrderService {
+func (s *CreateOrderService) TimeInForce(timeInForce common.TimeInForceType) *CreateOrderService {
 	s.timeInForce = &timeInForce
 	return s
 }
@@ -107,7 +108,7 @@ func (s *CreateOrderService) CallbackRate(callbackRate string) *CreateOrderServi
 }
 
 // WorkingType set workingType
-func (s *CreateOrderService) WorkingType(workingType futures.WorkingType) *CreateOrderService {
+func (s *CreateOrderService) WorkingType(workingType WorkingType) *CreateOrderService {
 	s.workingType = &workingType
 	return s
 }
@@ -119,19 +120,15 @@ func (s *CreateOrderService) PriceProtect(priceProtect bool) *CreateOrderService
 }
 
 // NewOrderRespType set newOrderRespType
-func (s *CreateOrderService) NewOrderRespType(newOrderRespType futures.NewOrderRespType) *CreateOrderService {
+func (s *CreateOrderService) NewOrderRespType(newOrderRespType common.NewOrderRespType) *CreateOrderService {
 	s.newOrderRespType = &newOrderRespType
 	return s
 }
 
 // Do send request
-func (s *CreateOrderService) Do(ctx context.Context, opts ...RequestOption) (res *futures.Order, err error) {
-	r := &request{
-		method:   http.MethodPost,
-		endpoint: "/fapi/v1/order",
-		secType:  secTypeSigned,
-	}
-	m := params{
+func (s *CreateOrderService) Do(ctx context.Context, opts ...aster.RequestOption) (res *Order, err error) {
+	r := aster.NewRequest(http.MethodPost, "/fapi/v1/order", aster.SecTypeSigned)
+	m := aster.Params{
 		"symbol":    s.symbol,
 		"side":      s.side,
 		"type":      s.orderType,
@@ -173,19 +170,19 @@ func (s *CreateOrderService) Do(ctx context.Context, opts ...RequestOption) (res
 	if s.newOrderRespType != nil {
 		m["newOrderRespType"] = *s.newOrderRespType
 	}
-	r.setFormParams(m)
-	data, err := s.c.callAPI(ctx, r, opts...)
+	r.SetFormParams(m)
+	data, err := s.C.CallAPI(ctx, r, opts...)
 	if err != nil {
 		return nil, err
 	}
-	res = new(futures.Order)
-	err = json.Unmarshal(data, res)
+	res = new(Order)
+	err = aster.JSON.Unmarshal(data, res)
 	return res, err
 }
 
 // GetOrderService get order
 type GetOrderService struct {
-	c                 *Client
+	C                 *aster.BaseClient
 	symbol            string
 	orderID           *int64
 	origClientOrderID *string
@@ -210,31 +207,27 @@ func (s *GetOrderService) OrigClientOrderID(origClientOrderID string) *GetOrderS
 }
 
 // Do send request
-func (s *GetOrderService) Do(ctx context.Context, opts ...RequestOption) (res *futures.Order, err error) {
-	r := &request{
-		method:   http.MethodGet,
-		endpoint: "/fapi/v1/order",
-		secType:  secTypeSigned,
-	}
-	r.setParam("symbol", s.symbol)
+func (s *GetOrderService) Do(ctx context.Context, opts ...aster.RequestOption) (res *Order, err error) {
+	r := aster.NewRequest(http.MethodGet, "/fapi/v1/order", aster.SecTypeSigned)
+	r.SetParam("symbol", s.symbol)
 	if s.orderID != nil {
-		r.setParam("orderId", *s.orderID)
+		r.SetParam("orderId", *s.orderID)
 	}
 	if s.origClientOrderID != nil {
-		r.setParam("origClientOrderId", *s.origClientOrderID)
+		r.SetParam("origClientOrderId", *s.origClientOrderID)
 	}
-	data, err := s.c.callAPI(ctx, r, opts...)
+	data, err := s.C.CallAPI(ctx, r, opts...)
 	if err != nil {
 		return nil, err
 	}
-	res = new(futures.Order)
-	err = json.Unmarshal(data, res)
+	res = new(Order)
+	err = aster.JSON.Unmarshal(data, res)
 	return res, err
 }
 
 // CancelOrderService cancel order
 type CancelOrderService struct {
-	c                 *Client
+	C                 *aster.BaseClient
 	symbol            string
 	orderID           *int64
 	origClientOrderID *string
@@ -259,31 +252,27 @@ func (s *CancelOrderService) OrigClientOrderID(origClientOrderID string) *Cancel
 }
 
 // Do send request
-func (s *CancelOrderService) Do(ctx context.Context, opts ...RequestOption) (res *futures.Order, err error) {
-	r := &request{
-		method:   http.MethodDelete,
-		endpoint: "/fapi/v1/order",
-		secType:  secTypeSigned,
-	}
-	r.setParam("symbol", s.symbol)
+func (s *CancelOrderService) Do(ctx context.Context, opts ...aster.RequestOption) (res *Order, err error) {
+	r := aster.NewRequest(http.MethodDelete, "/fapi/v1/order", aster.SecTypeSigned)
+	r.SetParam("symbol", s.symbol)
 	if s.orderID != nil {
-		r.setParam("orderId", *s.orderID)
+		r.SetParam("orderId", *s.orderID)
 	}
 	if s.origClientOrderID != nil {
-		r.setParam("origClientOrderId", *s.origClientOrderID)
+		r.SetParam("origClientOrderId", *s.origClientOrderID)
 	}
-	data, err := s.c.callAPI(ctx, r, opts...)
+	data, err := s.C.CallAPI(ctx, r, opts...)
 	if err != nil {
 		return nil, err
 	}
-	res = new(futures.Order)
-	err = json.Unmarshal(data, res)
+	res = new(Order)
+	err = aster.JSON.Unmarshal(data, res)
 	return res, err
 }
 
 // CancelAllOpenOrdersService cancel all open orders
 type CancelAllOpenOrdersService struct {
-	c      *Client
+	C      *aster.BaseClient
 	symbol string
 }
 
@@ -293,26 +282,17 @@ func (s *CancelAllOpenOrdersService) Symbol(symbol string) *CancelAllOpenOrdersS
 	return s
 }
 
-type CancelAllOpenOrdersResponse struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-}
-
 // Do send request
-func (s *CancelAllOpenOrdersService) Do(ctx context.Context, opts ...RequestOption) (err error) {
-	r := &request{
-		method:   http.MethodDelete,
-		endpoint: "/fapi/v1/allOpenOrders",
-		secType:  secTypeSigned,
-	}
-	r.setParam("symbol", s.symbol)
-	_, err = s.c.callAPI(ctx, r, opts...)
+func (s *CancelAllOpenOrdersService) Do(ctx context.Context, opts ...aster.RequestOption) error {
+	r := aster.NewRequest(http.MethodDelete, "/fapi/v1/allOpenOrders", aster.SecTypeSigned)
+	r.SetParam("symbol", s.symbol)
+	_, err := s.C.CallAPI(ctx, r, opts...)
 	return err
 }
 
 // ListOpenOrdersService list open orders
 type ListOpenOrdersService struct {
-	c      *Client
+	C      *aster.BaseClient
 	symbol *string
 }
 
@@ -323,20 +303,81 @@ func (s *ListOpenOrdersService) Symbol(symbol string) *ListOpenOrdersService {
 }
 
 // Do send request
-func (s *ListOpenOrdersService) Do(ctx context.Context, opts ...RequestOption) (res []*futures.Order, err error) {
-	r := &request{
-		method:   http.MethodGet,
-		endpoint: "/fapi/v1/openOrders",
-		secType:  secTypeSigned,
-	}
+func (s *ListOpenOrdersService) Do(ctx context.Context, opts ...aster.RequestOption) (res []*Order, err error) {
+	r := aster.NewRequest(http.MethodGet, "/fapi/v1/openOrders", aster.SecTypeSigned)
 	if s.symbol != nil {
-		r.setParam("symbol", *s.symbol)
+		r.SetParam("symbol", *s.symbol)
 	}
-	data, err := s.c.callAPI(ctx, r, opts...)
+	data, err := s.C.CallAPI(ctx, r, opts...)
 	if err != nil {
 		return nil, err
 	}
-	res = make([]*futures.Order, 0)
-	err = json.Unmarshal(data, &res)
+	res = make([]*Order, 0)
+	err = aster.JSON.Unmarshal(data, &res)
+	return res, err
+}
+
+// ListOrdersService list all orders
+type ListOrdersService struct {
+	C         *aster.BaseClient
+	symbol    string
+	orderID   *int64
+	startTime *int64
+	endTime   *int64
+	limit     *int
+}
+
+// Symbol set symbol
+func (s *ListOrdersService) Symbol(symbol string) *ListOrdersService {
+	s.symbol = symbol
+	return s
+}
+
+// OrderID set orderID
+func (s *ListOrdersService) OrderID(orderID int64) *ListOrdersService {
+	s.orderID = &orderID
+	return s
+}
+
+// StartTime set startTime
+func (s *ListOrdersService) StartTime(startTime int64) *ListOrdersService {
+	s.startTime = &startTime
+	return s
+}
+
+// EndTime set endTime
+func (s *ListOrdersService) EndTime(endTime int64) *ListOrdersService {
+	s.endTime = &endTime
+	return s
+}
+
+// Limit set limit
+func (s *ListOrdersService) Limit(limit int) *ListOrdersService {
+	s.limit = &limit
+	return s
+}
+
+// Do send request
+func (s *ListOrdersService) Do(ctx context.Context, opts ...aster.RequestOption) (res []*Order, err error) {
+	r := aster.NewRequest(http.MethodGet, "/fapi/v1/allOrders", aster.SecTypeSigned)
+	r.SetParam("symbol", s.symbol)
+	if s.orderID != nil {
+		r.SetParam("orderId", *s.orderID)
+	}
+	if s.startTime != nil {
+		r.SetParam("startTime", *s.startTime)
+	}
+	if s.endTime != nil {
+		r.SetParam("endTime", *s.endTime)
+	}
+	if s.limit != nil {
+		r.SetParam("limit", *s.limit)
+	}
+	data, err := s.C.CallAPI(ctx, r, opts...)
+	if err != nil {
+		return nil, err
+	}
+	res = make([]*Order, 0)
+	err = aster.JSON.Unmarshal(data, &res)
 	return res, err
 }
