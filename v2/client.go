@@ -174,6 +174,9 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 			return fmt.Errorf("API key is required")
 		}
 		header.Set("X-MBX-APIKEY", c.APIKey)
+		if c.Debug {
+			c.Logger.Printf("Setting API Key header: X-MBX-APIKEY = %s...", c.APIKey[:20])
+		}
 	}
 	
 	// Handle signature
@@ -202,21 +205,26 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 				return err
 			}
 			r.SetParam("signature", signature)
+			// Update query string with signature
+			queryString = r.query.Encode()
 		} else {
 			// HMAC signature for spot
 			if c.SecretKey == "" {
 				return fmt.Errorf("secret key is required for HMAC signature")
 			}
 			
-			// Get updated query string after adding timestamp
+			// Build query string without signature first
 			queryString = r.query.Encode()
 			payload := queryString + bodyString
 			signature := common.HMACSignature(payload, c.SecretKey)
-			r.SetParam("signature", signature)
+			
+			// Now append signature to the query string manually to ensure it's last
+			if queryString != "" {
+				queryString = queryString + "&signature=" + signature
+			} else {
+				queryString = "signature=" + signature
+			}
 		}
-		
-		// Update query string with signature
-		queryString = r.query.Encode()
 	}
 	
 	if queryString != "" {
@@ -310,8 +318,25 @@ func NewSpotClient(apiKey, secretKey string, opts ...ClientOption) *BaseClient {
 	return client
 }
 
-// NewFuturesClient creates a futures trading client (using Web3 signature)
-func NewFuturesClient(userAddress, signerAddress, privateKey string, opts ...ClientOption) *BaseClient {
+// NewFuturesClient creates a futures trading client (using HMAC signature)
+func NewFuturesClient(apiKey, secretKey string, opts ...ClientOption) *BaseClient {
+	// Default options for futures
+	defaultOpts := []ClientOption{
+		WithAPIKey(apiKey),
+		WithSecretKey(secretKey),
+		WithBaseURL(baseFuturesAPIURL),
+	}
+	
+	// Append user options
+	defaultOpts = append(defaultOpts, opts...)
+	
+	client := NewBaseClient(defaultOpts...)
+	client.SignatureType = common.SignatureTypeHMAC
+	return client
+}
+
+// NewFuturesClientWithWeb3 creates a futures trading client (using Web3 signature)
+func NewFuturesClientWithWeb3(userAddress, signerAddress, privateKey string, opts ...ClientOption) *BaseClient {
 	// Default options for futures
 	defaultOpts := []ClientOption{
 		WithUserAddress(userAddress),

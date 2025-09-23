@@ -35,6 +35,31 @@ func main() {
 	<-doneC
 	fmt.Println("Book ticker stream closed")
 	
+	// Example 1b: Combined Book Ticker WebSocket for multiple symbols
+	fmt.Println("\n=== Combined Book Ticker WebSocket ===")
+	symbols := []string{"BTCUSDT", "ETHUSDT", "BNBUSDT"}
+	
+	doneC1b, stopC1b, err := aster.WsCombinedSpotBookTickerServe(symbols, func(event *aster.WsBookTickerEvent) {
+		fmt.Printf("Combined Book Ticker - Symbol: %s, Bid: %s @ %s, Ask: %s @ %s\n",
+			event.Symbol, event.BestBidPrice, event.BestBidQty, event.BestAskPrice, event.BestAskQty)
+	}, func(err error) {
+		log.Printf("Error: %v", err)
+	})
+	
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	// Let it run for 10 seconds
+	go func() {
+		time.Sleep(10 * time.Second)
+		close(stopC1b)
+	}()
+	
+	// Wait for connection to close
+	<-doneC1b
+	fmt.Println("Combined book ticker stream closed")
+	
 	// Example 2: Futures Kline WebSocket
 	fmt.Println("\n=== Futures Kline WebSocket ===")
 	doneC2, stopC2, err := aster.WsFuturesKlineServe("BTCUSDT", string(common.Interval1m), 
@@ -61,8 +86,28 @@ func main() {
 	<-doneC2
 	fmt.Println("Kline stream closed")
 	
-	// Example 3: User Data Stream (requires authentication)
-	fmt.Println("\n=== User Data Stream Example ===")
+	// Example 3: Futures User Data Stream Example
+	fmt.Println("\n=== Futures User Data Stream Example ===")
+	
+	// For futures user data
+	futuresClient := aster.NewFuturesClient("your-api-key", "your-secret-key")
+	
+	// Example of handling futures position updates
+	handleFuturesUserData := func(event *aster.WsFuturesUserDataEvent) {
+		switch event.Event {
+		case "ACCOUNT_UPDATE":
+			if event.AccountUpdate != nil {
+				fmt.Println("Futures Account Update:")
+				for _, pos := range event.AccountUpdate.UpdateData.Positions {
+					fmt.Printf("  Position - Symbol: %s, Side: %s, Amount: %s, Entry Price: %s, UnrealizedPnL: %s\n",
+						pos.Symbol, pos.Side, pos.Amount, pos.EntryPrice, pos.UnrealizedPnL)
+				}
+			}
+		}
+	}
+	
+	// Example 4: User Data Stream (requires authentication)
+	fmt.Println("\n=== Spot User Data Stream Example ===")
 	
 	// For spot user data
 	spotAuthClient := aster.NewSpot("your-api-key", "your-secret-key")

@@ -14,7 +14,7 @@ func WsFuturesDepthServe(symbol string, handler WsDepthHandler, errHandler ErrHa
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsDepthEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -32,7 +32,7 @@ func WsFuturesPartialDepthServe(symbol string, levels int, handler WsDepthHandle
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsDepthEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -50,7 +50,7 @@ func WsFuturesKlineServe(symbol string, interval string, handler WsFuturesKlineH
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsFuturesKlineEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -68,7 +68,7 @@ func WsFuturesAggTradeServe(symbol string, handler WsFuturesAggTradeHandler, err
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsFuturesAggTradeEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -86,7 +86,7 @@ func WsFuturesMarkPriceServe(symbol string, handler WsFuturesMarkPriceHandler, e
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsFuturesMarkPriceEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -104,7 +104,7 @@ func WsFuturesAllMarkPriceServe(handler WsFuturesMarkPriceHandler, errHandler Er
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		var events []*WsFuturesMarkPriceEvent
-		err := JSON.Unmarshal(message, &events)
+		err := json.Unmarshal(message, &events)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -124,7 +124,7 @@ func WsFuturesBookTickerServe(symbol string, handler WsBookTickerHandler, errHan
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsBookTickerEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -142,7 +142,7 @@ func WsFuturesAllBookTickerServe(handler WsBookTickerHandler, errHandler ErrHand
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsBookTickerEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -159,25 +159,31 @@ func WsFuturesUserDataServe(listenKey string, handler WsFuturesUserDataHandler, 
 	endpoint := fmt.Sprintf("%s/ws/%s", getWsEndpoint(true, false), listenKey)
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
-		// First check the event type
-		var eventType struct {
-			Event string `json:"e"`
-		}
-		err := JSON.Unmarshal(message, &eventType)
+		// First check the event type using a map
+		var rawMap map[string]interface{}
+		err := json.Unmarshal(message, &rawMap)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
 			}
 			return
 		}
+		
+		eventTypeStr, ok := rawMap["e"].(string)
+		if !ok {
+			if errHandler != nil {
+				errHandler(fmt.Errorf("event type 'e' is not a string"))
+			}
+			return
+		}
 
 		event := new(WsFuturesUserDataEvent)
-		event.Event = eventType.Event
+		event.Event = eventTypeStr
 
-		switch eventType.Event {
+		switch eventTypeStr {
 		case "ACCOUNT_UPDATE":
 			var accountUpdate WsFuturesAccountUpdate
-			err = JSON.Unmarshal(message, &accountUpdate)
+			err = json.Unmarshal(message, &accountUpdate)
 			if err == nil {
 				event.Time = accountUpdate.Time
 				event.TransactionTime = accountUpdate.TransactionTime
@@ -190,7 +196,7 @@ func WsFuturesUserDataServe(listenKey string, handler WsFuturesUserDataHandler, 
 				TransactionTime int64               `json:"T"`
 				Order           WsFuturesOrderUpdate `json:"o"`
 			}
-			err = JSON.Unmarshal(message, &orderData)
+			err = json.Unmarshal(message, &orderData)
 			if err == nil {
 				event.Time = orderData.Time
 				event.TransactionTime = orderData.TransactionTime
@@ -203,7 +209,7 @@ func WsFuturesUserDataServe(listenKey string, handler WsFuturesUserDataHandler, 
 				TransactionTime      int64                        `json:"T"`
 				AccountConfigUpdate  WsFuturesAccountConfigUpdate `json:"ac"`
 			}
-			err = JSON.Unmarshal(message, &configData)
+			err = json.Unmarshal(message, &configData)
 			if err == nil {
 				event.Time = configData.Time
 				event.TransactionTime = configData.TransactionTime
@@ -211,7 +217,7 @@ func WsFuturesUserDataServe(listenKey string, handler WsFuturesUserDataHandler, 
 			}
 		case "MARGIN_CALL":
 			var marginCall WsFuturesMarginCall
-			err = JSON.Unmarshal(message, &marginCall)
+			err = json.Unmarshal(message, &marginCall)
 			if err == nil {
 				event.MarginCall = &marginCall
 			}
@@ -241,6 +247,16 @@ func WsCombinedFuturesDepthServe(symbols []string, handler WsDepthHandler, errHa
 	return wsCombinedFuturesDepthServe(endpoint, handler, errHandler)
 }
 
+// WsCombinedFuturesBookTickerServe serves websocket combined book ticker stream for futures
+func WsCombinedFuturesBookTickerServe(symbols []string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	var streams []string
+	for _, s := range symbols {
+		streams = append(streams, fmt.Sprintf("%s@bookTicker", strings.ToLower(s)))
+	}
+	endpoint := fmt.Sprintf("%s?streams=%s", combinedFuturesBaseURL, strings.Join(streams, "/"))
+	return wsCombinedFuturesBookTickerServe(endpoint, handler, errHandler)
+}
+
 // Internal function for combined futures depth
 func wsCombinedFuturesDepthServe(endpoint string, handler WsDepthHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
 	cfg := newWsConfig(endpoint)
@@ -249,7 +265,7 @@ func wsCombinedFuturesDepthServe(endpoint string, handler WsDepthHandler, errHan
 			Stream string          `json:"stream"`
 			Data   json.RawMessage `json:"data"`
 		}
-		err := JSON.Unmarshal(message, &combinedEvent)
+		err := json.Unmarshal(message, &combinedEvent)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -258,7 +274,36 @@ func wsCombinedFuturesDepthServe(endpoint string, handler WsDepthHandler, errHan
 		}
 
 		event := new(WsDepthEvent)
-		err = JSON.Unmarshal(combinedEvent.Data, event)
+		err = json.Unmarshal(combinedEvent.Data, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// Internal function for combined futures book ticker
+func wsCombinedFuturesBookTickerServe(endpoint string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	cfg := newWsConfig(endpoint)
+	wsHandler := func(message []byte) {
+		var combinedEvent struct {
+			Stream string          `json:"stream"`
+			Data   json.RawMessage `json:"data"`
+		}
+		err := json.Unmarshal(message, &combinedEvent)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+
+		event := new(WsBookTickerEvent)
+		err = json.Unmarshal(combinedEvent.Data, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)

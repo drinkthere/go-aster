@@ -6,12 +6,12 @@ import (
 
 // Base WebSocket endpoints
 const (
-	baseWsMainnetURL       = "wss://stream.asterdex.com:9443"
+	baseWsMainnetURL        = "wss://sstream.asterdex.com"
 	baseWsFuturesMainnetURL = "wss://fstream.asterdex.com"
-	baseWsTestnetURL       = "wss://testnet.asterdex.com"
+	baseWsTestnetURL        = "wss://testnet.asterdex.com"
 	
-	combinedBaseURL = "wss://stream.asterdex.com:9443/stream?streams="
-	combinedFuturesBaseURL = "wss://fstream.asterdex.com/stream?streams="
+	combinedBaseURL        = "wss://sstream.asterdex.com/stream"
+	combinedFuturesBaseURL = "wss://fstream.asterdex.com/stream"
 )
 
 // getWsEndpoint returns the websocket endpoint
@@ -334,14 +334,14 @@ type WsFuturesBalance struct {
 
 // WsFuturesPosition represents futures position
 type WsFuturesPosition struct {
-	Symbol                 string                 `json:"s"`
-	Side                   string                 `json:"ps"`
-	Amount                 string                 `json:"pa"`
-	MarginType             string                 `json:"mt"`
-	IsolatedWallet         string                 `json:"iw"`
-	MarkPrice              string                 `json:"mp"`
-	UnrealizedPnL          string                 `json:"up"`
-	MaintenanceMarginRequired string              `json:"mm"`
+	Symbol         string `json:"s"`   // 交易对
+	Side           string `json:"ps"`  // 持仓方向
+	Amount         string `json:"pa"`  // 持仓数量
+	MarginType     string `json:"mt"`  // 保证金模式
+	IsolatedWallet string `json:"iw"`  // 若为逐仓，仓位保证金
+	MarkPrice      string `json:"mp"`  // 标记价格
+	UnrealizedPnL  string `json:"up"`  // 持仓未实现盈亏
+	EntryPrice     string `json:"ep"`  // 持仓成本价
 }
 
 // WsFuturesOrderUpdate represents futures order update

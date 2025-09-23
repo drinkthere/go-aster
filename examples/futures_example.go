@@ -11,12 +11,11 @@ import (
 )
 
 func main() {
-	// Create a new futures client with Web3 signature
-	userAddress := "0xYourUserAddress"
-	signerAddress := "0xYourSignerAddress"
-	privateKey := "yourPrivateKeyWithout0x"
+	// Create a new futures client with API Key + Secret Key
+	apiKey := "your-api-key"
+	secretKey := "your-secret-key"
 	
-	client := aster.NewFuturesClient(userAddress, signerAddress, privateKey)
+	client := aster.NewFuturesClient(apiKey, secretKey)
 	
 	// Example 1: Get server time
 	fmt.Println("=== Server Time ===")

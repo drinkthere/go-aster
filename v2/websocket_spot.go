@@ -14,7 +14,7 @@ func WsSpotDepthServe(symbol string, handler WsDepthHandler, errHandler ErrHandl
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsDepthEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -32,7 +32,7 @@ func WsSpotPartialDepthServe(symbol string, levels int, handler WsDepthHandler, 
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsDepthEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -50,7 +50,7 @@ func WsSpotKlineServe(symbol string, interval string, handler WsSpotKlineHandler
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsSpotKlineEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -68,7 +68,7 @@ func WsSpotAggTradeServe(symbol string, handler WsSpotAggTradeHandler, errHandle
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsSpotAggTradeEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -86,7 +86,7 @@ func WsSpotBookTickerServe(symbol string, handler WsBookTickerHandler, errHandle
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsBookTickerEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -104,7 +104,7 @@ func WsSpotAllBookTickerServe(handler WsBookTickerHandler, errHandler ErrHandler
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		event := new(WsBookTickerEvent)
-		err := JSON.Unmarshal(message, event)
+		err := json.Unmarshal(message, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -122,7 +122,7 @@ func WsSpotAllMarketsStatServe(handler WsSpotAllMarketsStatHandler, errHandler E
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
 		var event WsSpotAllMarketsStatEvent
-		err := JSON.Unmarshal(message, &event)
+		err := json.Unmarshal(message, &event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -143,7 +143,7 @@ func WsSpotUserDataServe(listenKey string, handler WsSpotUserDataHandler, errHan
 		var eventType struct {
 			Event string `json:"e"`
 		}
-		err := JSON.Unmarshal(message, &eventType)
+		err := json.Unmarshal(message, &eventType)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -161,14 +161,14 @@ func WsSpotUserDataServe(listenKey string, handler WsSpotUserDataHandler, errHan
 				Time          int64           `json:"E"`
 				AccountUpdate WsSpotAccountUpdate `json:"u"`
 			}
-			err = JSON.Unmarshal(message, &accountUpdate)
+			err = json.Unmarshal(message, &accountUpdate)
 			if err == nil {
 				event.Time = accountUpdate.Time
 				event.AccountUpdate = &accountUpdate.AccountUpdate
 			}
 		case "executionReport":
 			var orderUpdate WsSpotOrderUpdate
-			err = JSON.Unmarshal(message, &orderUpdate)
+			err = json.Unmarshal(message, &orderUpdate)
 			if err == nil {
 				event.OrderUpdate = &orderUpdate
 			}
@@ -198,6 +198,16 @@ func WsCombinedSpotDepthServe(symbols []string, handler WsDepthHandler, errHandl
 	return wsCombinedSpotDepthServe(endpoint, handler, errHandler)
 }
 
+// WsCombinedSpotBookTickerServe serves websocket combined book ticker stream
+func WsCombinedSpotBookTickerServe(symbols []string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	var streams []string
+	for _, s := range symbols {
+		streams = append(streams, fmt.Sprintf("%s@bookTicker", strings.ToLower(s)))
+	}
+	endpoint := fmt.Sprintf("%s?streams=%s", combinedBaseURL, strings.Join(streams, "/"))
+	return wsCombinedSpotBookTickerServe(endpoint, handler, errHandler)
+}
+
 // Internal function for combined depth
 func wsCombinedSpotDepthServe(endpoint string, handler WsDepthHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
 	cfg := newWsConfig(endpoint)
@@ -206,7 +216,7 @@ func wsCombinedSpotDepthServe(endpoint string, handler WsDepthHandler, errHandle
 			Stream string          `json:"stream"`
 			Data   json.RawMessage `json:"data"`
 		}
-		err := JSON.Unmarshal(message, &combinedEvent)
+		err := json.Unmarshal(message, &combinedEvent)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)
@@ -215,7 +225,36 @@ func wsCombinedSpotDepthServe(endpoint string, handler WsDepthHandler, errHandle
 		}
 
 		event := new(WsDepthEvent)
-		err = JSON.Unmarshal(combinedEvent.Data, event)
+		err = json.Unmarshal(combinedEvent.Data, event)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// Internal function for combined book ticker
+func wsCombinedSpotBookTickerServe(endpoint string, handler WsBookTickerHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	cfg := newWsConfig(endpoint)
+	wsHandler := func(message []byte) {
+		var combinedEvent struct {
+			Stream string          `json:"stream"`
+			Data   json.RawMessage `json:"data"`
+		}
+		err := json.Unmarshal(message, &combinedEvent)
+		if err != nil {
+			if errHandler != nil {
+				errHandler(err)
+			}
+			return
+		}
+
+		event := new(WsBookTickerEvent)
+		err = json.Unmarshal(combinedEvent.Data, event)
 		if err != nil {
 			if errHandler != nil {
 				errHandler(err)

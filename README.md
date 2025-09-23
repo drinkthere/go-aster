@@ -68,8 +68,8 @@ import (
 )
 
 func main() {
-    // Create a futures client with Web3 authentication
-    client := aster.NewFuturesClient("userAddress", "signerAddress", "privateKey")
+    // Create a futures client (using API Key + Secret Key)
+    client := aster.NewFuturesClient("your-api-key", "your-secret-key")
     
     // Get exchange info
     exchangeService := &futures.ExchangeInfoService{C: client}
@@ -119,16 +119,22 @@ doneC, stopC, err := aster.WsSpotBookTickerServe("BTCUSDT",
 
 ## Authentication
 
-### Spot (HMAC)
-Spot trading uses HMAC-SHA256 signature:
+Both Spot and Futures trading use HMAC-SHA256 signature with API Key and Secret Key:
+
+### Spot
 ```go
 client := aster.NewSpot("api-key", "secret-key")
 ```
 
-### Futures (Web3)
-Futures trading uses Ethereum-style signatures:
+### Futures
 ```go
-client := aster.NewFuturesClient("userAddress", "signerAddress", "privateKey")
+client := aster.NewFuturesClient("api-key", "secret-key")
+```
+
+### Futures with Web3 (Optional)
+If you need to use Web3/Ethereum-style signatures for futures:
+```go
+client := aster.NewFuturesClientWithWeb3("userAddress", "signerAddress", "privateKey")
 ```
 
 ## Examples
