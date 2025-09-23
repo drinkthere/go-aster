@@ -74,6 +74,7 @@ const (
 	TimeInForceTypeGTC TimeInForceType = "GTC"
 	TimeInForceTypeIOC TimeInForceType = "IOC"
 	TimeInForceTypeFOK TimeInForceType = "FOK"
+	TimeInForceTypeGTX TimeInForceType = "GTX"
 )
 
 // NewOrderRespType response type
