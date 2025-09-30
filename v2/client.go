@@ -27,11 +27,12 @@ const (
 	// Spot API endpoints
 	baseSpotAPIURL     = "https://sapi.asterdex.com"
 	baseSpotAPITestURL = "https://testnet-sapi.asterdex.com"
-	
+
 	// Futures API endpoints
-	baseFuturesAPIURL     = "https://fapi.asterdex.com"
-	baseFuturesAPITestURL = "https://testnet.asterdex.com"
-	
+	baseFuturesAPIURL        = "https://fapi.asterdex.com"
+	baseWsFuturesIntranetURL = "https://fapi3.asterdex.com"
+	baseFuturesAPITestURL    = "https://testnet.asterdex.com"
+
 	// WebSocket endpoints
 	baseWsMainURL    = "wss://stream.asterdex.com:9443"
 	baseWsTestURL    = "wss://testnet.asterdex.com"
@@ -43,17 +44,17 @@ type doFunc func(req *http.Request) (*http.Response, error)
 
 // BaseClient is the base client for all APIs
 type BaseClient struct {
-	APIKey      string
-	SecretKey   string
-	BaseURL     string
-	UserAgent   string
-	HTTPClient  *http.Client
-	Debug       bool
-	Logger      *log.Logger
-	TimeOffset  int64
-	do          doFunc
+	APIKey       string
+	SecretKey    string
+	BaseURL      string
+	UserAgent    string
+	HTTPClient   *http.Client
+	Debug        bool
+	Logger       *log.Logger
+	TimeOffset   int64
+	do           doFunc
 	LocalAddress string // Local IP address for outbound connections
-	
+
 	// For futures API with Web3 signature
 	UserAddress   string
 	SignerAddress string
@@ -131,19 +132,19 @@ func WithLocalAddress(localAddr string) ClientOption {
 func NewBaseClient(opts ...ClientOption) *BaseClient {
 	c := &BaseClient{
 		UserAgent: "go-aster/2.0",
-		Logger: log.New(os.Stderr, "[ASTER] ", log.LstdFlags),
+		Logger:    log.New(os.Stderr, "[ASTER] ", log.LstdFlags),
 	}
-	
+
 	// Apply options first
 	for _, opt := range opts {
 		opt(c)
 	}
-	
+
 	// Create HTTP client with optional local address binding
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	
+
 	// If LocalAddress is specified, configure the dialer
 	if c.LocalAddress != "" {
 		localAddr, err := net.ResolveTCPAddr("tcp", c.LocalAddress+":0")
@@ -158,12 +159,12 @@ func NewBaseClient(opts ...ClientOption) *BaseClient {
 			}
 		}
 	}
-	
+
 	c.HTTPClient = &http.Client{
 		Timeout:   30 * time.Second,
 		Transport: transport,
 	}
-	
+
 	return c
 }
 
@@ -180,7 +181,7 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 	if r.recvWindow > 0 {
 		r.SetParam("recvWindow", r.recvWindow)
 	}
-	
+
 	queryString := r.query.Encode()
 	body := &bytes.Buffer{}
 	bodyString := r.form.Encode()
@@ -188,14 +189,14 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 	if r.header != nil {
 		header = r.header.Clone()
 	}
-	
+
 	// Set headers
 	header.Set("User-Agent", c.UserAgent)
 	if bodyString != "" {
 		header.Set("Content-Type", "application/x-www-form-urlencoded")
 		body = bytes.NewBufferString(bodyString)
 	}
-	
+
 	// Handle authentication
 	if r.secType == secTypeAPIKey || r.secType == secTypeSigned {
 		if c.APIKey == "" {
@@ -206,12 +207,12 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 			c.Logger.Printf("Setting API Key header: X-MBX-APIKEY = %s...", c.APIKey[:20])
 		}
 	}
-	
+
 	// Handle signature
 	if r.secType == secTypeSigned {
 		timestamp := time.Now().UnixNano() / 1e6
 		r.SetParam("timestamp", timestamp)
-		
+
 		// For futures with Web3 signature
 		if c.SignatureType == common.SignatureTypeWeb3 {
 			if c.UserAddress == "" || c.SignerAddress == "" || c.PrivateKey == "" {
@@ -220,13 +221,13 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 			r.SetParam("userAddress", c.UserAddress)
 			r.SetParam("signerAddress", c.SignerAddress)
 			r.SetParam("nonce", time.Now().UnixMicro())
-			
+
 			// Get updated query string after adding auth params
 			queryString = r.query.Encode()
-			
+
 			// Parse all params
 			params := common.ParseParamsFromURL(queryString, bodyString)
-			
+
 			// Create Web3 signature
 			signature, err := common.Web3Signature(params, c.PrivateKey)
 			if err != nil {
@@ -240,12 +241,12 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 			if c.SecretKey == "" {
 				return fmt.Errorf("secret key is required for HMAC signature")
 			}
-			
+
 			// Build query string without signature first
 			queryString = r.query.Encode()
 			payload := queryString + bodyString
 			signature := common.HMACSignature(payload, c.SecretKey)
-			
+
 			// Now append signature to the query string manually to ensure it's last
 			if queryString != "" {
 				queryString = queryString + "&signature=" + signature
@@ -254,7 +255,7 @@ func (c *BaseClient) parseRequest(r *request, opts ...RequestOption) (err error)
 			}
 		}
 	}
-	
+
 	if queryString != "" {
 		fullURL = fmt.Sprintf("%s?%s", fullURL, queryString)
 	}
@@ -273,18 +274,18 @@ func (c *BaseClient) callAPI(ctx context.Context, r *request, opts ...RequestOpt
 	if err != nil {
 		return []byte{}, err
 	}
-	
+
 	req, err := http.NewRequest(r.method, r.fullURL, r.body)
 	if err != nil {
 		return []byte{}, err
 	}
 	req = req.WithContext(ctx)
 	req.Header = r.header
-	
+
 	if c.Debug {
 		c.Logger.Printf("Request: %#v", req)
 	}
-	
+
 	f := c.do
 	if f == nil {
 		f = c.HTTPClient.Do
@@ -293,7 +294,7 @@ func (c *BaseClient) callAPI(ctx context.Context, r *request, opts ...RequestOpt
 	if err != nil {
 		return []byte{}, err
 	}
-	
+
 	data, err = io.ReadAll(res.Body)
 	if err != nil {
 		return []byte{}, err
@@ -304,7 +305,7 @@ func (c *BaseClient) callAPI(ctx context.Context, r *request, opts ...RequestOpt
 			err = cerr
 		}
 	}()
-	
+
 	if c.Debug {
 		c.Logger.Printf("Response Status: %d, Body: %s", res.StatusCode, string(data))
 	}
@@ -337,10 +338,31 @@ func NewSpotClient(apiKey, secretKey string, opts ...ClientOption) *BaseClient {
 		WithSecretKey(secretKey),
 		WithBaseURL(baseSpotAPIURL),
 	}
-	
+
 	// Append user options
 	defaultOpts = append(defaultOpts, opts...)
-	
+
+	client := NewBaseClient(defaultOpts...)
+	client.SignatureType = common.SignatureTypeHMAC
+	return client
+}
+
+// makeFuturesClient creates a futures trading client (using HMAC signature)
+func makeFuturesClient(apiKey, secretKey string, useIntranet bool, opts ...ClientOption) *BaseClient {
+	// Default options for futures
+	defaultOpts := []ClientOption{
+		WithAPIKey(apiKey),
+		WithSecretKey(secretKey),
+	}
+	if useIntranet {
+		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesIntranetURL))
+	} else {
+		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesURL))
+	}
+
+	// Append user options
+	defaultOpts = append(defaultOpts, opts...)
+
 	client := NewBaseClient(defaultOpts...)
 	client.SignatureType = common.SignatureTypeHMAC
 	return client
@@ -348,35 +370,46 @@ func NewSpotClient(apiKey, secretKey string, opts ...ClientOption) *BaseClient {
 
 // NewFuturesClient creates a futures trading client (using HMAC signature)
 func NewFuturesClient(apiKey, secretKey string, opts ...ClientOption) *BaseClient {
-	// Default options for futures
-	defaultOpts := []ClientOption{
-		WithAPIKey(apiKey),
-		WithSecretKey(secretKey),
-		WithBaseURL(baseFuturesAPIURL),
-	}
-	
-	// Append user options
-	defaultOpts = append(defaultOpts, opts...)
-	
-	client := NewBaseClient(defaultOpts...)
-	client.SignatureType = common.SignatureTypeHMAC
-	return client
+
+	return makeFuturesClient(apiKey, secretKey, false, opts...)
 }
 
-// NewFuturesClientWithWeb3 creates a futures trading client (using Web3 signature)
-func NewFuturesClientWithWeb3(userAddress, signerAddress, privateKey string, opts ...ClientOption) *BaseClient {
+// NewFuturesIntranetClient creates a futures trading intranet client (using HMAC signature)
+func NewFuturesIntranetClient(apiKey, secretKey string, opts ...ClientOption) *BaseClient {
+
+	return makeFuturesClient(apiKey, secretKey, true, opts...)
+}
+
+// makeFuturesClientWithWeb3 creates a futures trading client (using Web3 signature)
+func makeFuturesClientWithWeb3(userAddress, signerAddress, privateKey string, useIntranet bool, opts ...ClientOption) *BaseClient {
 	// Default options for futures
 	defaultOpts := []ClientOption{
 		WithUserAddress(userAddress),
 		WithSignerAddress(signerAddress),
 		WithPrivateKey(privateKey),
-		WithBaseURL(baseFuturesAPIURL),
 	}
-	
+	if useIntranet {
+		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesIntranetURL))
+	} else {
+		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesURL))
+	}
+
 	// Append user options
 	defaultOpts = append(defaultOpts, opts...)
-	
+
 	client := NewBaseClient(defaultOpts...)
 	client.SignatureType = common.SignatureTypeWeb3
 	return client
+}
+
+// NewFuturesClientWithWeb3 creates a futures trading client (using Web3 signature)
+func NewFuturesClientWithWeb3(userAddress, signerAddress, privateKey string, opts ...ClientOption) *BaseClient {
+
+	return makeFuturesClientWithWeb3(userAddress, signerAddress, privateKey, false, opts...)
+}
+
+// NewFuturesIntranetClientWithWeb3 creates a futures trading client (using Web3 signature)
+func NewFuturesIntranetClientWithWeb3(userAddress, signerAddress, privateKey string, opts ...ClientOption) *BaseClient {
+
+	return makeFuturesClientWithWeb3(userAddress, signerAddress, privateKey, true, opts...)
 }
