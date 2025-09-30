@@ -29,9 +29,9 @@ const (
 	baseSpotAPITestURL = "https://testnet-sapi.asterdex.com"
 
 	// Futures API endpoints
-	baseFuturesAPIURL        = "https://fapi.asterdex.com"
-	baseWsFuturesIntranetURL = "https://fapi3.asterdex.com"
-	baseFuturesAPITestURL    = "https://testnet.asterdex.com"
+	baseFuturesAPIURL         = "https://fapi.asterdex.com"
+	baseFuturesAPIIntranetURL = "https://fapi3.asterdex.com"
+	baseFuturesAPITestURL     = "https://testnet.asterdex.com"
 
 	// WebSocket endpoints
 	baseWsMainURL    = "wss://stream.asterdex.com:9443"
@@ -355,9 +355,9 @@ func makeFuturesClient(apiKey, secretKey string, useIntranet bool, opts ...Clien
 		WithSecretKey(secretKey),
 	}
 	if useIntranet {
-		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesIntranetURL))
+		defaultOpts = append(defaultOpts, WithBaseURL(baseFuturesAPIIntranetURL))
 	} else {
-		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesURL))
+		defaultOpts = append(defaultOpts, WithBaseURL(baseFuturesAPIURL))
 	}
 
 	// Append user options
@@ -389,9 +389,9 @@ func makeFuturesClientWithWeb3(userAddress, signerAddress, privateKey string, us
 		WithPrivateKey(privateKey),
 	}
 	if useIntranet {
-		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesIntranetURL))
+		defaultOpts = append(defaultOpts, WithBaseURL(baseFuturesAPIIntranetURL))
 	} else {
-		defaultOpts = append(defaultOpts, WithBaseURL(baseWsFuturesURL))
+		defaultOpts = append(defaultOpts, WithBaseURL(baseFuturesAPIURL))
 	}
 
 	// Append user options
